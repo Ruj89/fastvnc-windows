@@ -1,0 +1,1 @@
+.\vnc.ps1 -session "Portatile vecchio"
