@@ -1,1 +1,1 @@
-.\vnc.ps1 -session "Portatile vecchio"
+& "$PSScriptRoot\vnc.ps1" -session "Portatile vecchio"
