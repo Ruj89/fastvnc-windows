@@ -44,6 +44,7 @@ WantedBy=multi-user.target
 sudo apt install xfce4
 chmod 775 /home/<user>/.vnc/xstartup
 sudo chmod 775 /etc/systemd/system/vncserver@.service
+sudo systemctl enable vncserver@1
 vncpasswd
 ```
 
