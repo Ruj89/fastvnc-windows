@@ -38,7 +38,7 @@ if($password -eq "") {
     $password = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($securepassword))
 }
 Start-Process -FilePath $PSScriptRoot\3rdparty\pscp.exe -ArgumentList "-pw $password `"${session}:${vncPasswordPath}`" `"$PSScriptRoot/tmp/passwd`""
-$plink = Start-Process -FilePath $PSScriptRoot\3rdparty\plink.exe -ArgumentList "-load `"$session`" -pw $password -batch" -PassThru
+$plink = Start-Process -FilePath $PSScriptRoot\3rdparty\plink.exe -ArgumentList "-load `"$session`" -pw $password -batch -N -L 0.0.0.0:${port}:localhost:${port}" -PassThru
 Clear-Variable password
 $vncviewer = Start-Process -FilePath $PSScriptRoot\3rdparty\vncviewer.exe -ArgumentList "localhost:$port -passwd `"$PSScriptRoot/tmp/passwd`" -Maximize −AcceptClipboard −SendClipboard" -PassThru # -NoNewWindow -Wait
 sleep 1
