@@ -2,7 +2,8 @@
     [Parameter(Mandatory=$true)][string]$session = "",
     [string]$port = "5901",
     [string]$vncPasswordPath = ".vnc/passwd",
-    [string]$password = ""
+    [string]$password = "",
+    [switch]$sshKey
  )
 
 Add-Type @"
@@ -33,15 +34,18 @@ if(!(Test-Path "$PSScriptRoot\3rdparty\vncviewer.exe")) {
     Invoke-WebRequest -Uri "https://bintray.com/tigervnc/stable/download_file?file_path=vncviewer64-1.10.1.exe" -OutFile "$PSScriptRoot\3rdparty\vncviewer.exe"
 }
 
-if($password -eq "") {
+$extra = ""
+if($password -eq "" -and $sshKey -eq $false) {
     $securepassword = $( Read-Host -assecurestring "Please enter your password" )
     $password = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($securepassword))
+    $extra = "-pw $password"
 }
-Start-Process -FilePath $PSScriptRoot\3rdparty\pscp.exe -ArgumentList "-pw $password `"${session}:${vncPasswordPath}`" `"$PSScriptRoot/tmp/passwd`""
-$plink = Start-Process -FilePath $PSScriptRoot\3rdparty\plink.exe -ArgumentList "-load `"$session`" -pw $password -batch -N -L 0.0.0.0:${port}:localhost:${port}" -PassThru
+$pscp = Start-Process -FilePath $PSScriptRoot\3rdparty\pscp.exe -ArgumentList "$extra `"${session}:${vncPasswordPath}`" `"$PSScriptRoot/tmp/passwd`""
+$plink = Start-Process -FilePath $PSScriptRoot\3rdparty\plink.exe -ArgumentList "-load `"$session`" $extra -batch -N -L 0.0.0.0:${port}:localhost:${port}" -PassThru
 Clear-Variable password
+Clear-Variable extra
+Wait-Process pscp
 $vncviewer = Start-Process -FilePath $PSScriptRoot\3rdparty\vncviewer.exe -ArgumentList "localhost:$port -passwd `"$PSScriptRoot/tmp/passwd`" -Maximize −AcceptClipboard −SendClipboard" -PassThru # -NoNewWindow -Wait
-sleep 1
 [void] [Tricks]::SetForegroundWindow($vncviewer.MainWindowHandle)
 $vncviewer.WaitForExit()
 Remove-Item $PSScriptRoot\tmp\passwd
