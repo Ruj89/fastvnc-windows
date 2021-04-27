@@ -1,6 +1,7 @@
 ﻿param (
     [Parameter(Mandatory=$true)][string]$session = "",
     [string]$port = "5901",
+    [string]$internalPort = "5901",
     [string]$vncPasswordPath = ".vnc/passwd",
     [string]$password = "",
     [switch]$sshKey
@@ -40,13 +41,16 @@ if($password -eq "" -and $sshKey -eq $false) {
     $password = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($securepassword))
     $extra = "-pw $password"
 }
-$pscp = Start-Process -FilePath $PSScriptRoot\3rdparty\pscp.exe -ArgumentList "$extra `"${session}:${vncPasswordPath}`" `"$PSScriptRoot/tmp/passwd`""
-$plink = Start-Process -FilePath $PSScriptRoot\3rdparty\plink.exe -ArgumentList "-load `"$session`" $extra -batch -N -L 0.0.0.0:${port}:localhost:${port}" -PassThru
+if(!(Test-Path "$PSScriptRoot\tmp\$session")) {
+    New-Item "$PSScriptRoot\tmp\$session" -itemtype directory
+}
+$pscp = Start-Process -FilePath $PSScriptRoot\3rdparty\pscp.exe -ArgumentList "$extra `"${session}:${vncPasswordPath}`" `"$PSScriptRoot/tmp/$session/passwd`""
+$plink = Start-Process -FilePath $PSScriptRoot\3rdparty\plink.exe -ArgumentList "-load `"$session`" $extra -batch -N -L 0.0.0.0:${internalPort}:localhost:${port}" -PassThru
 Clear-Variable password
 Clear-Variable extra
 Wait-Process pscp
-$vncviewer = Start-Process -FilePath $PSScriptRoot\3rdparty\vncviewer.exe -ArgumentList "localhost:$port -passwd `"$PSScriptRoot/tmp/passwd`" -Maximize −AcceptClipboard −SendClipboard" -PassThru # -NoNewWindow -Wait
+$vncviewer = Start-Process -FilePath $PSScriptRoot\3rdparty\vncviewer.exe -ArgumentList "localhost:$internalPort -passwd `"$PSScriptRoot/tmp/$session/passwd`" -Maximize −AcceptClipboard −SendClipboard" -PassThru # -NoNewWindow -Wait
 [void] [Tricks]::SetForegroundWindow($vncviewer.MainWindowHandle)
 $vncviewer.WaitForExit()
-Remove-Item $PSScriptRoot\tmp\passwd
+Remove-Item $PSScriptRoot\tmp\$session\passwd
 Stop-Process $plink
